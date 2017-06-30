@@ -9,7 +9,7 @@
 struct configuration {
 	char *directory;
 	guint statement_size;
-	gunit rows_per_file;
+	guint rows_per_file;
 	char use_any_index;
 };
 
