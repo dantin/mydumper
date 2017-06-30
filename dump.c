@@ -8,7 +8,7 @@
 
 struct configuration {
 	char *directory;
-	guint statement_chunksize;
+	guint statement_size;
 };
 
 void dump_table(MYSQL *conn, char *database, char *table, struct configuration *conf);
@@ -82,7 +82,7 @@ void dump_table_data(MYSQL *conn, FILE *file, char *database, char *table, char 
 	char *query = NULL;
 
 	/* Poor man's database code */
-	char *query = g_strdup_printf("SELECT * FROM %s %s %s", table, where?"WHERE":"", where?where:"");
+	query = g_strdup_printf("SELECT * FROM %s %s %s", table, where?"WHERE":"", where?where:"");
 	mysql_query(conn, query);
 
 	result = mysql_use_result(conn);
