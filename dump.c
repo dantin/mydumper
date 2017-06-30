@@ -96,7 +96,7 @@ void dump_table(MYSQL * conn, char *database, char *table, char *where, struct c
 	}
 	fprintf(outfile, ";\n");
 	// cleanup:
-	if (output)
+	if (outfile)
 		fclose(outfile);
 	g_free(filename);
 	g_free(query);
