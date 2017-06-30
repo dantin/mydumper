@@ -339,7 +339,7 @@ void dump_table(MYSQL *conn, char *database, char *table, struct configuration *
 			j->type=JOB_DUMP;
 			j->filename=g_strdup_printf("%s/%s.%s.%05d.sql", conf->directory, database, table, nchunk);
 			j->where=g_strdup((char *)chunks->data);
-			g_async_queue-push(conf->queue,j);
+			g_async_queue_push(conf->queue,j);
 			nchunk++;
 		}
 	} else {
