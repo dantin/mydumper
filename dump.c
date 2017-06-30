@@ -16,9 +16,9 @@ struct configuration {
 	char *hostname;
 	char *username;
 	char *password;
-	GAsyncQueue* queue;
-	GCond* ready;
-	GMutex* mutex;
+	GAsyncQueue *queue;
+	GAsyncQueue *ready;
+	GMutex *mutex;
 	int done;
 };
 
@@ -47,7 +47,7 @@ void *process_queue(struct configuration * conf) {
 	mysql_query(thrconn, "START TRANSACTION WITH CONSISTENT SNAPSHOT");
 	mysql_query(thrconn, "SET NAMES binary");
 
-	g_cond_signal(conf->ready);
+	g_async_queue_push(conf->ready,GINT_TO_POINTER(1));
 
 	struct job* job;
 	for(;;) {
@@ -55,7 +55,6 @@ void *process_queue(struct configuration * conf) {
 		g_get_current_time(&tv);
 		g_time_val_add(&tv,1000*1000*1);
 		job=g_async_queue_pop(conf->queue);
-		g_debug("Got job %p: %d",job,job->type);
 		switch (job->type) {
 			case JOB_DUMP:
 				dump_table_data_file(thrconn, job->database, job->table, job->where, job->filename, job->conf);
@@ -87,14 +86,14 @@ int main(int ac, char **av)
 	mysql_query(conn, "SET NAMES binary");
 
 	conf.queue = g_async_queue_new();
-	conf.ready = g_cond_new();
+	conf.ready = g_async_queue_new();
 	conf.mutex = g_mutex_new();
 
 	int n;
 	GThread **threads = g_new(GThread*,conf.num_threads);
 	for (n=0; n<conf.num_threads; n++) {
 		threads[n] = g_thread_create((GThreadFunc)process_queue,&conf,TRUE,NULL);
-		g_cond_wait(conf.ready, conf.mutex);
+		g_async_queue_pop(conf.ready);
 	}
 	mysql_query(conn, "UNLOCK TABLES");
 
@@ -265,7 +264,15 @@ guint64 estimate_count(MYSQL *conn, char *database, char *table, char *field, ch
 		g_free(querybase);
 	}
 
-	MYSQL_RES * result = mysql_store_result(conn);
+	MYSQL_RES *result = mysql_store_result(conn);
+	MYSQL_FIELD *fields = mysql_fetch_fields(result);
+	
+	int i;
+	for (i=0; i<mysql_num_fields(result); i++) {
+		if (!strcmp(fields[i].name,"rows"))
+			break;
+	}
+
 	MYSQL_ROW row = NULL;
 
 	guint64 count=0;
@@ -273,8 +280,8 @@ guint64 estimate_count(MYSQL *conn, char *database, char *table, char *field, ch
 	if (result)
 		row = mysql_fetch_row(result);
 
-	if (row && row[8])
-		count=strtoll(row[8],NULL,10);
+	if (row && row[i])
+		count=strtoll(row[i],NULL,10);
 
 	if (result)
 		mysql_free_result(result);
