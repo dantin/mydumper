@@ -14,12 +14,12 @@ int main(int ac, char **av)
 {
 	MYSQL *conn;
 	conn = mysql_init(NULL);
-	mysql_real_connect(conn, "localhost", "root", "", NULL, 3306, NULL, 0);
+	mysql_real_connect(conn, "10.3.3.129", "root", "", NULL, 3306, NULL, 0);
 	mysql_query(conn, "START TRANSACTION WITH CONSISTENT SNAPSHOT");
 
 	struct configuration conf = { "output", 1000000 };
 
-	dump_table(conn, "test", "categorylinks", &conf);
+	dump_table(conn, "mbk_order", "mbk_orders", &conf);
 	return (0);
 }
 
@@ -38,6 +38,10 @@ void dump_table(MYSQL * conn, char *database, char *table, struct configuration 
 	mysql_query(conn, query);
 
 	MYSQL_RES *result = mysql_use_result(conn);
+	if (result == NULL) {
+		printf("No records\n");
+		return;
+	}
 	guint num_fields = mysql_num_fields(result);
 	MYSQL_FIELD *fields = mysql_fetch_fields(result);
 
