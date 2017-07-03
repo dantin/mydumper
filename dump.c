@@ -66,7 +66,7 @@ void create_backup_dir(char *directory);
 void *process_queue(struct configuration * conf) {
 	mysql_thread_init();
 	MYSQL *thrconn = mysql_init(NULL);
-	mysql_options(thrconn,MYSQL_DEFAULT_GROUP,"mydumper");
+	mysql_options(thrconn,MYSQL_READ_DEFAULT_GROUP,"mydumper");
 
 	if(!mysql_real_connect(thrconn, hostname, username, password, db, port, NULL, 0)) {
 		g_critical("Failed to connect to database: %s", mysql_error(thrconn));
