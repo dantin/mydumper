@@ -608,7 +608,7 @@ void dump_table_data(MYSQL *conn, FILE *file, char *database, char *table, char 
 			if (!row[i]) {
 				g_string_append(statement, "NULL");
 			} else if (fields[i].flags & NUM_FLAG) {
-				g_string_printf(statement, "\"%s\"", row[i]);
+				g_string_append_printf(statement, "\"%s\"", row[i]);
 			} else {
 				/* We reuse buffers for string escaping, growing is expensive just at the beginning */
 				g_string_set_size(escaped, lengths[i]*2+1);
@@ -619,7 +619,7 @@ void dump_table_data(MYSQL *conn, FILE *file, char *database, char *table, char 
 
 			}
 			if (i < num_fields - 1) {
-				g_string_append(statement, ",");
+				g_string_append(statement,",");
 			} else {
 				/* INSERT statement is closed once over limit */
 				if (statement->len > statement_size) {
@@ -638,8 +638,8 @@ void dump_table_data(MYSQL *conn, FILE *file, char *database, char *table, char 
 	// cleanup:
 	g_free(query);
 
-	g_string_free(escaped,1);
-	g_string_free(statement,1);
+	g_string_free(escaped,TRUE);
+	g_string_free(statement,TRUE);
 
 	if (result) {
 		mysql_free_result(result);
@@ -652,14 +652,5 @@ int write_data(void *file, GString *data)
 		return write(fileno(file),data->str,data->len);
 	else
 		return gzwrite((gzFile)file,data->str,data->len);
-}
-
-int write_compressed_data (gzFile file, char *buf, const char *format, va_list va)
-{
-    int len;
-    len = vsnprintf(buf, sizeof(buf), format, va);
-    if (len <= 0 || len >= (int)sizeof(buf) || buf[sizeof(buf) - 1] != 0)
-        return 0;
-    return gzwrite(file, buf, (unsigned)len);
 }
 
