@@ -525,7 +525,7 @@ void dump_table_data_file(MYSQL *conn, char *database, char *table, char *where,
 	if (!compress_output)
 		fclose(outfile);
 	else
-		gzclosse(outfile);
+		gzclose(outfile);
 }
 
 void dump_table(MYSQL *conn, char *database, char *table, struct configuration *conf) {
@@ -626,7 +626,7 @@ void dump_table_data(MYSQL *conn, FILE *file, char *database, char *table, char 
 				cw += write_data(file, "\"%s\"", escaped[i]);
 			}
 			if (i < num_fields - 1) {
-				g_fprintf(file, ",");
+				write_data(file, ",");
 			} else {
 				/* INSERT statement is closed once over limit */
 				if (cw > statement_size) {
