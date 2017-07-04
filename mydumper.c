@@ -274,7 +274,9 @@ int main(int argc, char *argv[])
 	if (mysql_query(conn, "SET SESSION wait_timeout = 2147483")){
 		g_warning("Failed to increase wait_timeout: %s", mysql_error(conn));
 	}
-
+	if (mysql_query(conn, "SET SESSION net_write_timeout = 2147483")){
+		g_warning("Failed to increase net_write_timeout: %s", mysql_error(conn));
+	}
 
 	/*
 	 * We check SHOW PROCESSLIST, and if there're queries
