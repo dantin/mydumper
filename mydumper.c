@@ -739,6 +739,7 @@ guint64 dump_table_data(MYSQL *conn, FILE *file, char *database, char *table, ch
 	GString* statement = g_string_sized_new(statement_size);
 
 	g_string_printf(statement,"/*!40101 SET NAMES binary*/;\n");
+	g_string_append(statement,"/*!40101 SET FOREIGN_KEY_CHECKS=0*/;\n");
 	write_data(file, statement);
 
 	/* Poor man's database code */
