@@ -194,7 +194,7 @@ void *process_queue(struct configuration * conf) {
 		GTimeVal tv;
 		g_get_current_time(&tv);
 		g_time_val_add(&tv,1000*1000*1);
-		job=g_async_queue_pop(conf->queue);
+		job=(struct job *)g_async_queue_pop(conf->queue);
 		switch (job->type) {
 			case JOB_DUMP:
 				dump_table_data_file(thrconn, job->database, job->table, job->where, job->filename, job->conf);
@@ -295,6 +295,7 @@ int main(int argc, char *argv[])
 						g_warning("Could not KILL slow query: %s",mysql_error(conn));
 					else
 						g_warning("Killed a query that was running for %ss",row[tcol]);
+					g_free(p);
 				} else {
 					g_critical("There are queries in PROCESSLIST running longer than %us, aborting dump,\n\t"
 						"use --long-query-guard to change the guard value, kill queries (--kill-long-queries) or use \n\tdifferent server for dump", longquery);
@@ -394,6 +395,7 @@ GList * get_chunks_for_table(MYSQL *conn, char *database, char *table, struct co
 	MYSQL_RES *indexes=NULL, *minmax=NULL, *total=NULL;
 	MYSQL_ROW row;
 	char *index = NULL, *field = NULL;
+	int showed_nulls=0;
 	
 	/* first have to pick index, in future should be able to preset in configuration too */
 	gchar *query = g_strdup_printf("SHOW INDEX FROM `%s`.`%s`",database,table);
@@ -464,7 +466,6 @@ GList * get_chunks_for_table(MYSQL *conn, char *database, char *table, struct co
 	/* This is estimate, not to use as guarantee! Every chunk would have eventual adjustments */
 	guint64 estimated_chunks = rows / rows_per_file;
 	guint64 estimated_step, nmin, nmax, cutoff;
-	int showed_nulls=0;
 
 	/* Support just bigger INTs for now, very dumb, no verify approach */
 	switch (fields[0].type) {
@@ -638,9 +639,9 @@ void dump_table_data_file(MYSQL *conn, char *database, char *table, char *where,
 		g_critical("Error: DB: %s TABLE: %s Could not create output file %s (%d)", database, table, filename, errno);
 		return;
 	}
-	dump_table_data(conn, outfile, database, table, where, conf);
+	dump_table_data(conn, (FILE *)outfile, database, table, where, conf);
 	if (!compress_output)
-		fclose(outfile);
+		fclose((FILE *)outfile);
 	else
 		gzclose(outfile);
 }
