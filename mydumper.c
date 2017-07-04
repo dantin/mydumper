@@ -38,8 +38,8 @@ guint rows_per_file = 0;
 int need_dummy_read=0;
 int compress_output=0;
 
-gchar *ignore_engines = "FEDERATED,MRG_MYISAM,BLACKHOLE";
-char **ignore;
+gchar *ignore_engines = NULL;
+char **ignore = NULL;
 
 static GOptionEntry entries[] =
 {
@@ -536,32 +536,46 @@ void create_backup_dir(char *directory) {
 
 void dump_database(MYSQL * conn, char *database, struct configuration *conf) {
 	mysql_select_db(conn,database);
-	if (mysql_query(conn, "SHOW TABLES STATUS")) {
+	if (mysql_query(conn, (ignore?"SHOW TABLE STATUS":"SHOW /*!50000 FULL */ TABLES")) {
 		g_critical("Error: DB: %s - Could not execute query: %s", database, mysql_error(conn));
 		return;
 	}
+	
 	MYSQL_RES *result = mysql_store_result(conn);
 	guint num_fields = mysql_num_fields(result);
 
 	int i;
-	int dump;
 	MYSQL_ROW row;
 	while ((row = mysql_fetch_row(result))) {
-		/* We no care about views! */
-		if (num_fields>1 && g_strcmp0(row[1], NULL)) {
-			/* Ignore any engines specified */
-			dump = 1;
-			if (ignore != NULL) {
-				for (i = 0; ignore[i] != NULL; i++) {
-					if (g_ascii_strcasecmp(ignore[i], row[1]) == 0) {
-						dump = 0;
-					}
+		
+		int dump=1;
+
+		/* We no care about views!
+		 *    num_fields>1 kicks in only in case of 5.0 SHOW FULL TABLES or SHOW TABLE STATUS
+		 *    row[1] == NULL if it is a view in 5.0 'SHOW TABLE STATUS'
+		 *    row[1] == "VIEW" if it is a view in 5.0 'SHOW FULL TABLES'
+		 */
+		if (num_fields>1 && ( row[1] == NULL || !strcmp(row[1],"VIEW") ))
+			continue;
+
+		/* Skip ignored engines, handy for avoiding Merge, Federated or Blackhole :-) dumps */
+		if (ignore) {
+			for (i = 0; ignore[i] != NULL; i++) {
+				if (g_ascii_strcasecmp(ignore[i], row[1]) == 0) {
+					dump = 0;
+					break;
 				}
 			}
-
-			if(dump && (!regexstring || check_regex(database,row[0])))
-				dump_table(conn, database, row[0], conf);
 		}
+		if (!dump)
+			continue;
+
+		/* Checks PCRE expressions on 'database.table' string */
+		if (regexstring && !check_regex(database,row[0]))
+			continue;
+
+		/* Green light! */
+		dump_table(conn, database, row[0], conf);
 	}
 	mysql_free_result(result);
 }
