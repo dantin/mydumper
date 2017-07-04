@@ -536,7 +536,7 @@ void create_backup_dir(char *directory) {
 
 void dump_database(MYSQL * conn, char *database, struct configuration *conf) {
 	mysql_select_db(conn,database);
-	if (mysql_query(conn, (ignore?"SHOW TABLE STATUS":"SHOW /*!50000 FULL */ TABLES")) {
+	if (mysql_query(conn, (ignore?"SHOW TABLE STATUS":"SHOW /*!50000 FULL */ TABLES"))) {
 		g_critical("Error: DB: %s - Could not execute query: %s", database, mysql_error(conn));
 		return;
 	}
