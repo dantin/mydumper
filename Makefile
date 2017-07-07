@@ -21,6 +21,8 @@ RM = /bin/rm
 TAR = /bin/tar
 
 all: $(NAME)
+
+mydumper: mydumper.o
 	$(CC) $(CFLAGS) $(OPTFLAGS) -o $(NAME) $(NAME).o $(LDFLAGS)
 
 install: all
